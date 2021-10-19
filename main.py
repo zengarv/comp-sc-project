@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 from fpdf import FPDF
 from datetime import datetime
+import os
 
 # Get HTML source code
-url = 'https://prsindia.org/covid-19/cases'
-
 
 def graph():
-    datasite = requests.get(url)
+    prs = 'https://prsindia.org/covid-19/cases'
+    datasite = requests.get(prs)
     soup = BeautifulSoup(datasite.text, "html.parser")
     # Get all script tags(because that's where the data is)
     extracted_script = soup.findAll('script')[2]
@@ -46,8 +46,6 @@ def graph():
         plt.savefig('assets\\overall stat.jpeg', bbox_inches='tight')
         plt.close()
 
-    overall_stat()
-
     def last14day():
         plt.plot([x + 1 for x in range(14)], grp_list[2][-14:], label="Active")
         # plt.plot([x + 1 for x in range(14)], grp_list[1][-14:], label='Confirmed')
@@ -61,15 +59,76 @@ def graph():
         plt.legend(loc="upper left")
         plt.savefig('assets\\last14daystat.jpeg', bbox_inches='tight')
 
+    def statewise_stat():
+        statestaturl = 'https://www.ndtv.com/coronavirus/india-covid-19-tracker'
+
+        datasite = requests.get(statestaturl)
+        soup = BeautifulSoup(datasite.text, "html.parser")
+        table = soup.findAll('p', class_='mid-wrap')
+
+        st_cases = []
+        st_active = []
+        st_recovered = []
+        st_death = []
+
+        for index in range(len(table) // 4):
+            st_cases.append(int(table[4 * index].get_text().split()[0]))
+            st_active.append(int(table[4 * index + 1].get_text().split()[0]))
+            st_recovered.append(int(table[4 * index + 2].get_text().split()[0]))
+            st_death.append(int(table[4 * index + 3].get_text().split()[0]))
+
+        states_list = []
+        for states in soup.findAll('label'):
+            state = states.get_text()
+            if len(state) > 12:
+                state = ' '.join(x[:3] for x in state.split())
+            states_list.append(state)
+        states_list.pop(len(states_list) - 1)
+        states_list.pop(len(states_list) - 1)
+
+        fig = plt.figure(figsize=(10, 5))
+
+        # creating the bar plot
+        plt.bar(states_list, st_cases, label='Cases')
+        plt.bar(states_list, st_active, label='Active')
+        plt.xticks(rotation=90)
+        plt.yscale('log')
+
+        plt.text(24, 5000000, 'Note: Scale is Logarithmic', fontsize=8)
+        plt.xlabel("States")
+        plt.ylabel("Cases")
+        plt.title("Statewise Demographics")
+        plt.legend(loc="upper right")
+        plt.savefig('assets\\statewisestat.jpeg', bbox_inches='tight')
+
+    overall_stat()
     last14day()
+    statewise_stat()
+
+def get_articles():
+    url = 'https://www.google.com/search?q=covid+19&oq=covid+19&aqs=chrome..69i57j69i59l4j69i60.1448j0j9&sourceid=chrome&ie=UTF-8#wptab=s:H4sIAAAAAAAAAONgVuLVT9c3NMwySk6OL8zJecRowS3w8sc9YSn9SWtOXmPU5OIKzsgvd80rySypFJLmYoOyBKX4uVB18uxi4vZITcwpyQguSSwpXsQqmJxflJ-XWJZZVFqsUAwSAwD24HAsbgAAAA'
+    datasite = requests.get(url)
+    soup = BeautifulSoup(datasite.text, "html.parser")
+    fact = soup.findAll('span', class_='UMOHqf EDgFbc')
+
+    global fax
+    fax = []
+    for stuff in fact:
+        fax.append(stuff.get_text().replace('\n', '').replace('’', "'"))
+    fax.pop(len(fax) - 1)
+    fax.pop(0)
 
 
 graph()
+get_articles()
 
 title = 'The Covid Bugle'
+pdf_name = 'The Covid Bugle.pdf'
+
+
 class PDF(FPDF):
     def header(self):
-        pdf.set_font('times', 'B', 16)
+        self.set_font('times', 'B', 16)
         self.cell(70, align='C')
         title_w = self.get_string_width(title) + 6
         doc_w = self.w
@@ -81,8 +140,7 @@ class PDF(FPDF):
         self.cell(title_w, 10, title, border=True, ln=1, align='C', fill=True)
 
         now = datetime.now()
-        pdf.set_font('courier', '', 7)
-
+        self.set_font('courier', '', 7)
         self.cell(190, 7, f'Generated on {now.strftime("%b %d, %Y at %H:%M")}', align='C')
         self.image('assets\\covpic.png', 10, 2, 20)
         self.ln(10)
@@ -95,19 +153,34 @@ class PDF(FPDF):
         WHOsite = 'https://www.who.int/health-topics/coronavirus#tab=tab_1'
         self.set_font('helvetica', '', 6)
         self.set_text_color(100, 100, 150)
-        pdf.cell(-193, 2, 'Learn More: WHO', ln=1, link=WHOsite, align='C')
+        self.cell(-193, 2, 'Learn More: WHO', ln=1, link=WHOsite, align='C')
 
 
-pdf = PDF('P', 'mm', 'A4')
-pdf.set_auto_page_break(auto=True, margin=15)
-pdf.add_page()
+def generate_pdf():
+    # Setup
+    pdf = PDF('P', 'mm', 'A4')
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
 
-pdf.set_title(title)
-pdf.set_author('TheCovidBugle')
-pdf.image('assets\\overall stat.jpeg', x=3, y=30, w=100, h=75)  # 640:480, 4:3
-pdf.image('assets\\last14daystat.jpeg', x=103, y=30, w=100, h=75)
+    pdf.set_title(title)
+    pdf.set_author('TheCovidBugle')
 
-pdf.set_font('helvetica', '', 10)
-pdf.cell(0, 170, 'Stats go here\nMore Stats', ln=True)
+    # Page 1
+    pdf.image('assets\\overall stat.jpeg', x=3, y=30, w=100, h=75)  # 640:480, 4:3
+    pdf.image('assets\\last14daystat.jpeg', x=103, y=30, w=100, h=75)
+    pdf.image('assets\\statewisestat.jpeg', x=20, y=180, w=155)
 
-pdf.output('test_pdf.pdf')
+    pdf.set_font('times', 'BU', 15)
+    pdf.cell(0, 160, 'Top Stories')
+    pdf.set_font('helvetica', '', 10)
+    pdf.set_y(115)
+    for articles in fax:
+        articles = articles.encode('latin-1', 'replace').decode('latin-1')
+        pdf.multi_cell(w=180, h=6, txt='- '+articles, ln=True, border=False)
+
+    # Saving
+    pdf.output(pdf_name)
+    print(f'PDF generated at {os.getcwd()}\\{pdf_name}')
+
+
+generate_pdf()
