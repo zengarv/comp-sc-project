@@ -58,6 +58,7 @@ def graph():
         plt.title('Last 14 Days')
         plt.legend(loc="upper left")
         plt.savefig('assets\\last14daystat.jpeg', bbox_inches='tight')
+        plt.close()
 
     def statewise_stat():
         statestaturl = 'https://www.ndtv.com/coronavirus/india-covid-19-tracker'
@@ -100,6 +101,7 @@ def graph():
         plt.title("Statewise Demographics")
         plt.legend(loc="upper right")
         plt.savefig('assets\\statewisestat.jpeg', bbox_inches='tight')
+        plt.close()
 
     overall_stat()
     last14day()
@@ -114,7 +116,7 @@ def get_articles():
     global fax
     fax = []
     for stuff in fact:
-        fax.append(stuff.get_text().replace('\n', '').replace('’', "'"))
+        fax.append(stuff.get_text().replace('\n', '').replace('’', "'").replace('‘', "'"))
     fax.pop(len(fax) - 1)
     fax.pop(0)
 
@@ -122,8 +124,9 @@ def get_articles():
 graph()
 get_articles()
 
+now = datetime.now()
 title = 'The Covid Bugle'
-pdf_name = 'The Covid Bugle.pdf'
+pdf_name = f'The Covid Bugle, {now.strftime("%B %d, %Y")}.pdf'
 
 
 class PDF(FPDF):
@@ -139,7 +142,6 @@ class PDF(FPDF):
         self.set_line_width(1)
         self.cell(title_w, 10, title, border=True, ln=1, align='C', fill=True)
 
-        now = datetime.now()
         self.set_font('courier', '', 7)
         self.cell(190, 7, f'Generated on {now.strftime("%b %d, %Y at %H:%M")}', align='C')
         self.image('assets\\covpic.png', 10, 2, 20)
