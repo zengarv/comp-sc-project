@@ -1,9 +1,13 @@
+import time
+
+t0 = time.time()
 import requests
 import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 from fpdf import FPDF
 from datetime import datetime
 import os
+
 
 # Get HTML source code
 
@@ -25,6 +29,7 @@ def graph():
     dates = confirm = active = death = cure = count = []
     grp_list = [dates, confirm, active, death, cure, count]
     var_list = var_segment.strip().split('\n')
+    
     for index in range(len(var_list)):
         grp_list[index] = var_list[index].lstrip(' var').lstrip('abcdefghijklmnopqrstuvwxyz ').lstrip(' =[').rstrip(
             '"]; ').split('","' if index == 0 else ',')
@@ -87,8 +92,6 @@ def graph():
         states_list.pop(len(states_list) - 1)
         states_list.pop(len(states_list) - 1)
 
-        fig = plt.figure(figsize=(10, 5))
-
         # creating the bar plot
         plt.bar(states_list, st_cases, label='Cases')
         plt.bar(states_list, st_active, label='Active')
@@ -106,6 +109,7 @@ def graph():
     overall_stat()
     last14day()
     statewise_stat()
+
 
 def get_articles():
     url = 'https://www.google.com/search?q=covid+19&oq=covid+19&aqs=chrome..69i57j69i59l4j69i60.1448j0j9&sourceid=chrome&ie=UTF-8#wptab=s:H4sIAAAAAAAAAONgVuLVT9c3NMwySk6OL8zJecRowS3w8sc9YSn9SWtOXmPU5OIKzsgvd80rySypFJLmYoOyBKX4uVB18uxi4vZITcwpyQguSSwpXsQqmJxflJ-XWJZZVFqsUAwSAwD24HAsbgAAAA'
@@ -130,11 +134,14 @@ pdf_name = f'The Covid Bugle, {now.strftime("%B %d, %Y")}.pdf'
 
 
 class PDF(FPDF):
+    
     def header(self):
+        
         self.set_font('times', 'B', 16)
         self.cell(70, align='C')
         title_w = self.get_string_width(title) + 6
         doc_w = self.w
+        
         self.set_x((doc_w - title_w) / 2)
         self.set_draw_color(0, 80, 180)  # Border Colour: blue
         self.set_fill_color(230, 230, 0)  # Background Color of Title: yellow
@@ -159,6 +166,7 @@ class PDF(FPDF):
 
 
 def generate_pdf():
+    
     # Setup
     pdf = PDF('P', 'mm', 'A4')
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -176,13 +184,18 @@ def generate_pdf():
     pdf.cell(0, 160, 'Top Stories')
     pdf.set_font('helvetica', '', 10)
     pdf.set_y(115)
+    
     for articles in fax:
         articles = articles.encode('latin-1', 'replace').decode('latin-1')
-        pdf.multi_cell(w=180, h=6, txt='- '+articles, ln=True, border=False)
+        pdf.multi_cell(w=180, h=6, txt='- ' + articles, ln=True, border=False)
 
     # Saving
     pdf.output(pdf_name)
     print(f'PDF generated at {os.getcwd()}\\{pdf_name}')
+
+    for img in os.listdir('assets'):
+        if img not in ['covpic.png']:
+            os.remove(f'assets\\{img}')
 
 
 generate_pdf()
