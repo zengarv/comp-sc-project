@@ -87,6 +87,8 @@ def graph():
         states_list.pop(len(states_list) - 1)
 
         # creating the bar plot
+
+        plt.figure(figsize=(10, 5))
         plt.bar(states_list, st_cases, label='Cases')
         plt.bar(states_list, st_active, label='Active')
         plt.xticks(rotation=90)
@@ -130,7 +132,7 @@ def graph():
         plt.xlabel("Persons fully vaccinated per 100 population", color='b', loc='center')
 
         plt.ylabel("Countries", color='r')
-        plt.title("Vaccination stats")
+        plt.title("Percentage of Population Vaccinated by Country")
         plt.legend(loc="upper right")
 
         # plt.savefig('assets\\statewisestat.jpeg', bbox_inches='tight')
@@ -253,10 +255,10 @@ def generate_pdf():
     print(f'PDF generated at {os.getcwd()}\\{pdf_name}')
     
 
-    # Deleting all graphs
-    for img in os.listdir('assets'):
-        if img not in ['covpic.png']:
-            os.remove(f'assets\\{img}')
+    # # Deleting all graphs
+    # for img in os.listdir('assets'):
+    #     if img not in ['covpic.png']:
+    #         os.remove(f'assets\\{img}')
 
 
 generate_pdf()
