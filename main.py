@@ -5,13 +5,12 @@ from fpdf import FPDF
 from datetime import datetime
 import os
 
-# Get HTML source code
 
 def graph():
     prs = 'https://prsindia.org/covid-19/cases'
     datasite = requests.get(prs)
     soup = BeautifulSoup(datasite.text, "html.parser")
-    # Get all script tags(because that's where the data is)
+    # Get all script tags(because that's where the data we need is)
     extracted_script = soup.findAll('script')[2]
 
     # Find the lists we are looking for
@@ -58,6 +57,7 @@ def graph():
         plt.title('Last 14 Days')
         plt.legend(loc="upper left")
         plt.savefig('assets\\last14daystat.jpeg', bbox_inches='tight')
+        plt.close()
 
     def statewise_stat():
         statestaturl = 'https://www.ndtv.com/coronavirus/india-covid-19-tracker'
@@ -86,8 +86,6 @@ def graph():
         states_list.pop(len(states_list) - 1)
         states_list.pop(len(states_list) - 1)
 
-        fig = plt.figure(figsize=(10, 5))
-
         # creating the bar plot
         plt.bar(states_list, st_cases, label='Cases')
         plt.bar(states_list, st_active, label='Active')
@@ -100,10 +98,50 @@ def graph():
         plt.title("Statewise Demographics")
         plt.legend(loc="upper right")
         plt.savefig('assets\\statewisestat.jpeg', bbox_inches='tight')
+        plt.close()
+    
+    def generate_ccvp():  # Countrywise Covid Vaccination Percentage
+        url = 'https://covid19.who.int/table'
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        table_data = soup.findAll('div', class_='column_Total_Fully_Vacc_Per_100 td')
+        filtered_table_data = [float(data.text) for data in table_data if data.text != '']
+
+        countries = soup.findAll('span')[-1:-1*len(filtered_table_data)-1:-1][::-1]
+        filtered_countries = [country.text for country in countries if country.text != '']
+
+        # Code to shorten country names
+        def list_replace(list_, target, value):
+            if target in list_:
+                list_[list_.index(target)] = value
+
+        list_replace(filtered_countries, 'Iran (Islamic Republic of)', 'Iran')
+        list_replace(filtered_countries, 'United States of America', 'USA')
+        list_replace(filtered_countries, 'The United Kingdom', 'UK')
+        list_replace(filtered_countries, 'Russian Federation', 'Russia')
+
+        # print(filtered_countries, filtered_table_data, sep='\n')
+        plt.barh(filtered_countries, filtered_table_data, label='Vaccination Coverage', color=list('g'))
+        plt.gcf().set_size_inches(8, 10)
+
+        plt.xticks(rotation=90)
+
+        plt.xlabel("Persons fully vaccinated per 100 population", color='b', loc='center')
+
+        plt.ylabel("Countries", color='r')
+        plt.title("Vaccination stats")
+        plt.legend(loc="upper right")
+
+        # plt.savefig('assets\\statewisestat.jpeg', bbox_inches='tight')
+        plt.savefig('assets\\vaccination_stats.jpeg', bbox_inches='tight')
+        plt.close()
+
 
     overall_stat()
     last14day()
     statewise_stat()
+    generate_ccvp()
 
 def get_articles():
     url = 'https://www.google.com/search?q=covid+19&oq=covid+19&aqs=chrome..69i57j69i59l4j69i60.1448j0j9&sourceid=chrome&ie=UTF-8#wptab=s:H4sIAAAAAAAAAONgVuLVT9c3NMwySk6OL8zJecRowS3w8sc9YSn9SWtOXmPU5OIKzsgvd80rySypFJLmYoOyBKX4uVB18uxi4vZITcwpyQguSSwpXsQqmJxflJ-XWJZZVFqsUAwSAwD24HAsbgAAAA'
@@ -208,10 +246,12 @@ def generate_pdf():
     pdf.set_font('helvetica', '', 10)
     pdf.cell(0, 40, f'Today\'s Vaccinations: {todays_vaccinations}')
 
+    pdf.image('assets\\vaccination_stats.jpeg', x=20, y=60, w=155, h=200)
 
     # Saving
     pdf.output(pdf_name)
     print(f'PDF generated at {os.getcwd()}\\{pdf_name}')
+    
 
     # Deleting all graphs
     for img in os.listdir('assets'):
