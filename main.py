@@ -255,10 +255,10 @@ def generate_pdf():
     print(f'PDF generated at {os.getcwd()}\\{pdf_name}')
     
 
-    # # Deleting all graphs
-    # for img in os.listdir('assets'):
-    #     if img not in ['covpic.png']:
-    #         os.remove(f'assets\\{img}')
+    # Deleting all graphs
+    for img in os.listdir('assets'):
+        if img not in ['covpic.png']:
+            os.remove(f'assets\\{img}')
 
 
 generate_pdf()
