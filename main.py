@@ -157,6 +157,7 @@ def get_articles():
         fax.append(stuff.get_text().replace('\n', '').replace('’', "'"))
     fax.pop(len(fax) - 1)
     fax.pop(0)
+    # fax.pop(-1)
 
 def get_vaccination_details():
     url = 'https://www.google.com/search?q=covid+vaccination&oq=covid+vaccination&aqs=chrome..69i57j69i60l3.3281j0j1&sourceid=chrome&ie=UTF-8'
@@ -176,8 +177,16 @@ def get_vaccination_details():
                 todays_vaccination, total_vaccinations = 'Not Available', 'Not Available'
             return todays_vaccination, total_vaccinations
 
+def get_global_stats():
+    url = 'https://www.worldometers.info/coronavirus/'
+    r = requests.get(url)
+    soup = BeautifulSoup(r.text, "html.parser")
+
+    return tuple([x.text.replace('\n', '') for x in soup.findAll('div', class_='maincounter-number')])  # Global Cases, Deaths, Recovered
+
 graph()
 get_articles()
+gcases, gdeaths, grecovered = get_global_stats()
 
 now = datetime.now()
 title = 'The Covid Bugle'
@@ -232,23 +241,31 @@ def generate_pdf():
     pdf.cell(0, 160, 'Top Stories')
     pdf.set_font('helvetica', '', 10)
     pdf.set_y(115)
-    for articles in fax:
+    for articles in fax[:-1]:
         articles = articles.encode('latin-1', 'replace').decode('latin-1')
         pdf.multi_cell(w=180, h=6, txt='- '+articles, ln=True, border=False)
     
     pdf.add_page()
     pdf.set_font('times', 'BU', 20)
     pdf.cell(0, 10, 'Vaccination Data')
+    pdf.set_x(110)
+    pdf.cell(50, 10, 'Global Coverage')
 
     pdf.set_y(30)
     pdf.set_font('helvetica', '', 10)
     pdf.cell(0, 30, f'Total Vaccinations: {total_vaccination_data}')
+    pdf.set_x(110)
+    pdf.cell(50, 30, f'Cases: {gcases}')
 
     pdf.set_y(30)
     pdf.set_font('helvetica', '', 10)
     pdf.cell(0, 40, f'Today\'s Vaccinations: {todays_vaccinations}')
+    pdf.set_x(110)
+    pdf.cell(50, 40, f'Deaths: {gdeaths}')
+    pdf.set_x(110)
+    pdf.cell(0, 50, f'Recovered: {grecovered}')
 
-    pdf.image('assets\\vaccination_stats.jpeg', x=20, y=60, w=155, h=200)
+    pdf.image('assets\\vaccination_stats.jpeg', x=20, y=70, w=155, h=200)
 
     # Saving
     pdf.output(pdf_name)
