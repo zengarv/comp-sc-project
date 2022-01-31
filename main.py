@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from fpdf import FPDF
 from datetime import datetime
 import os
+import pandas as pd
 
 
 def graph():
@@ -159,23 +160,10 @@ def get_articles():
     fax.pop(0)
     # fax.pop(-1)
 
-def get_vaccination_details():
-    url = 'https://www.google.com/search?q=covid+vaccination&oq=covid+vaccination&aqs=chrome..69i57j69i60l3.3281j0j1&sourceid=chrome&ie=UTF-8'
-
-    d = requests.get(url)
-    soup = BeautifulSoup(d.text, "html.parser")
-
-    stuff = soup.findAll("div", class_="BNeawe s3v9rd AP7Wnd")
-
-    for s in stuff:
-        if "Vaccination Coverage" in s.text:
-            vaccination_coverage_list = s.text.split('.')
-            try:
-                int(''.join(vaccination_coverage_list[2].strip().split(',')))
-                todays_vaccination, total_vaccinations = vaccination_coverage_list[2], vaccination_coverage_list[4]
-            except:
-                todays_vaccination, total_vaccinations = 'Not Available', 'Not Available'
-            return todays_vaccination, total_vaccinations
+def vacc_dets():
+    vaccination_data = pd.read_csv('https://github.com/owid/covid-19-data/blob/master/public/data/vaccinations/vaccinations.csv?raw=true')
+    india_vaccination_data = vaccination_data[vaccination_data['location'] == 'India']
+    return india_vaccination_data.iloc[-1].to_dict()
 
 def get_global_stats():
     url = 'https://www.worldometers.info/coronavirus/'
@@ -192,8 +180,8 @@ now = datetime.now()
 title = 'The Covid Bugle'
 pdf_name = f'The Covid Bugle, {now.strftime("%B %d, %Y")}.pdf'
 
-vacc = get_vaccination_details()
-todays_vaccinations, total_vaccination_data = vacc if vacc is not None else ('Not Available', 'Not Available')
+vacc = vacc_dets()
+todays_vaccinations, total_vaccination_data = int(vacc['daily_people_vaccinated']), int(vacc['total_vaccinations'])
 
 class PDF(FPDF):
     def header(self):
