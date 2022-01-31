@@ -192,7 +192,9 @@ now = datetime.now()
 title = 'The Covid Bugle'
 pdf_name = f'The Covid Bugle, {now.strftime("%B %d, %Y")}.pdf'
 
-todays_vaccinations, total_vaccination_data = get_vaccination_details()
+vacc = get_vaccination_details()
+todays_vaccinations, total_vaccination_data = vacc if vacc is not None else ('Not Available', 'Not Available')
+
 class PDF(FPDF):
     def header(self):
         self.set_font('times', 'B', 16)
